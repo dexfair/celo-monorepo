@@ -1,55 +1,74 @@
 import SmartTopAlert, { AlertTypes } from '@celo/react-components/components/SmartTopAlert'
+import colors from '@celo/react-components/styles/colors'
 import * as React from 'react'
-import { WithTranslation } from 'react-i18next'
-import { connect } from 'react-redux'
-import { Namespaces, withTranslation } from 'src/i18n'
+import { useTranslation } from 'react-i18next'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Namespaces } from 'src/i18n'
 import { navigate } from 'src/navigator/NavigationService'
 import { Screens } from 'src/navigator/Screens'
-import { RootState } from 'src/redux/reducers'
-import { isBackupTooLate } from 'src/redux/selectors'
+import { shouldForceBackupSelector } from 'src/redux/selectors'
+import useTypedSelector from 'src/redux/useSelector'
 
-interface StateProps {
-  backupCompleted: boolean
-  accountCreationTime: number
-  doingBackupFlow: boolean
-  backupTooLate: boolean
-}
+const accountKeyScreens: string[] = [
+  Screens.BackupIntroduction,
+  Screens.AccountKeyEducation,
+  Screens.BackupPhrase,
+  Screens.BackupQuiz,
+]
 
-type Props = WithTranslation & StateProps
+function BackupPrompt() {
+  const { t } = useTranslation(Namespaces.backupKeyFlow6)
 
-const mapStateToProps = (state: RootState): StateProps => {
-  return {
-    accountCreationTime: state.account.accountCreationTime,
-    backupCompleted: state.account.backupCompleted,
-    doingBackupFlow: state.app.doingBackupFlow,
-    backupTooLate: isBackupTooLate(state),
-  }
-}
+  const backupCompleted = useTypedSelector((state) => state.account.backupCompleted)
+  const shouldForceBackup = useTypedSelector(shouldForceBackupSelector)
+  const activeScreen = useTypedSelector((state) => state.app.activeScreen)
 
-export class BackupPrompt extends React.Component<Props> {
-  goToBackup = () => {
+  const doingBackupFlow = accountKeyScreens.indexOf(activeScreen) >= 0
+
+  const goToBackup = () => {
     navigate(Screens.BackupIntroduction)
   }
 
-  render() {
-    const { t } = this.props
+  const isVisible = shouldForceBackup && !doingBackupFlow && !backupCompleted
 
-    const isVisible =
-      this.props.backupTooLate && !this.props.doingBackupFlow && !this.props.backupCompleted
-
-    return (
+  if (!isVisible) {
+    return null
+  }
+  return (
+    <View style={styles.container}>
       <SmartTopAlert
         isVisible={isVisible}
         timestamp={Date.now()}
         text={isVisible ? t('backupPrompt') : null}
-        onPress={this.goToBackup}
+        onPress={goToBackup}
         type={AlertTypes.MESSAGE}
         buttonMessage={isVisible ? t('getBackupKey') : null}
       />
-    )
-  }
+      <TouchableOpacity activeOpacity={1} style={styles.touchableContainer}>
+        <View style={styles.touchableContent} />
+      </TouchableOpacity>
+    </View>
+  )
 }
 
-export default connect<StateProps, {}, {}, RootState>(mapStateToProps)(
-  withTranslation<Props>(Namespaces.backupKeyFlow6)(BackupPrompt)
-)
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    flex: 1,
+    flexDirection: 'column',
+  },
+  touchableContainer: {
+    flex: 1,
+  },
+  touchableContent: {
+    flex: 1,
+    backgroundColor: colors.dark,
+    opacity: 0.5,
+  },
+})
+
+export default BackupPrompt

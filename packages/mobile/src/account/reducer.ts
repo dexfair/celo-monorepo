@@ -1,10 +1,11 @@
 import { isE164Number } from '@celo/utils/src/phoneNumbers'
 import { Actions, ActionTypes } from 'src/account/actions'
+import { DAYS_TO_BACKUP, DAYS_TO_DELAY } from 'src/backup/utils'
 import { DEV_SETTINGS_ACTIVE_INITIALLY } from 'src/config'
 import { features } from 'src/flags'
 import { getRehydratePayload, REHYDRATE, RehydrateAction } from 'src/redux/persist-helper'
 import Logger from 'src/utils/Logger'
-import { getRemoteTime } from 'src/utils/time'
+import { getRemoteTime, ONE_DAY_IN_MILLIS } from 'src/utils/time'
 import { Actions as Web3Actions, ActionTypes as Web3ActionTypes } from 'src/web3/actions'
 
 export interface State {
@@ -17,9 +18,8 @@ export interface State {
   photosNUXClicked: boolean
   pincodeType: PincodeType
   isSettingPin: boolean
-  accountCreationTime: number
   backupCompleted: boolean
-  backupDelayedTime: number
+  backupRequiredTime: number
   dismissedInviteFriends: boolean
   dismissedGetVerified: boolean
   dismissedGoldEducation: boolean
@@ -53,9 +53,8 @@ export const initialState = {
   photosNUXClicked: false,
   pincodeType: PincodeType.Unset,
   isSettingPin: false,
-  accountCreationTime: 99999999999999,
+  backupRequiredTime: 99999999999999,
   backupCompleted: false,
-  backupDelayedTime: 0,
   dismissedInviteFriends: false,
   dismissedGetVerified: false,
   dismissedGoldEducation: false,
@@ -147,7 +146,7 @@ export const reducer = (
     case Actions.SET_ACCOUNT_CREATION_TIME:
       return {
         ...state,
-        accountCreationTime: getRemoteTime(),
+        backupRequiredTime: getRemoteTime() + DAYS_TO_BACKUP * ONE_DAY_IN_MILLIS,
       }
     case Actions.SET_BACKUP_COMPLETED:
       return {
@@ -157,13 +156,12 @@ export const reducer = (
     case Actions.SET_BACKUP_DELAYED:
       return {
         ...state,
-        backupDelayedTime: getRemoteTime(),
+        backupRequiredTime: getRemoteTime() + DAYS_TO_DELAY * ONE_DAY_IN_MILLIS,
       }
     case Actions.TOGGLE_BACKUP_STATE:
       return {
         ...state,
         backupCompleted: !state.backupCompleted,
-        backupDelayedTime: 0,
       }
     case Actions.DISMISS_INVITE_FRIENDS:
       return {

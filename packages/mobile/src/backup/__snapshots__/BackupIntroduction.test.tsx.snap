@@ -87,6 +87,19 @@ exports[`BackupIntroduction renders correctly when backup completed 1`] = `
         />
       </svg>
     </View>
+    <View
+      style={
+        Object {
+          "marginBottom": 0,
+          "marginRight": 16,
+          "padding": 0,
+          "position": "absolute",
+          "right": 0,
+        }
+      }
+    >
+      <View />
+    </View>
   </View>
   <RCTScrollView
     contentContainerStyle={
@@ -274,6 +287,19 @@ exports[`BackupIntroduction renders correctly when backup not complete 1`] = `
           y2="21.75"
         />
       </svg>
+    </View>
+    <View
+      style={
+        Object {
+          "marginBottom": 0,
+          "marginRight": 16,
+          "padding": 0,
+          "position": "absolute",
+          "right": 0,
+        }
+      }
+    >
+      <View />
     </View>
   </View>
   <RCTScrollView

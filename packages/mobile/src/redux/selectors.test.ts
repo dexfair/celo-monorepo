@@ -1,33 +1,29 @@
-import { DAYS_TO_BACKUP, DAYS_TO_DELAY } from 'src/backup/utils'
-import { disabledDueToNoBackup } from 'src/redux/selectors'
+import { shouldForceBackupSelector } from 'src/redux/selectors'
+import { getMockStoreData } from 'test/utils'
 
-const DAYS_TO_MS = 24 * 60 * 60 * 1000
-const MS_TO_BACKUP = DAYS_TO_BACKUP * DAYS_TO_MS
-const MS_TO_DELAY = DAYS_TO_DELAY * DAYS_TO_MS
+const mockCurrentTime = 1552353116086
 
-const NOW = new Date().getTime()
-const ONE_DAY_AGO = NOW - MS_TO_BACKUP - 10000
+jest.mock('src/utils/time', () => ({
+  getRemoteTime: () => mockCurrentTime,
+}))
+
+const mockState = (backupRequiredTime: number, backupCompleted: boolean) =>
+  getMockStoreData({
+    account: { backupRequiredTime, backupCompleted },
+  })
 
 describe('redux/selectors', () => {
-  describe('disabledDueToNoBackup', () => {
-    it('should disable after set days', () => {
-      // Created less than 1 day ago
-      expect(disabledDueToNoBackup(ONE_DAY_AGO + 20000, false, 0)).toBe(false)
+  describe('shouldForceBackupSelector', () => {
+    it("should not force account key prompt if enough time hasn't passed", () => {
+      expect(shouldForceBackupSelector(mockState(mockCurrentTime + 10, false))).toBe(false)
     })
 
-    it('should disable after set days', () => {
-      // Created 1 day ago
-      expect(disabledDueToNoBackup(ONE_DAY_AGO, false, 0)).toBe(true)
+    it('should force account key prompt if delay time is up', () => {
+      expect(shouldForceBackupSelector(mockState(mockCurrentTime - 10, false))).toBe(true)
     })
 
-    it('should be enabled if within delay', () => {
-      // Created 1 day ago and delayed now
-      expect(disabledDueToNoBackup(ONE_DAY_AGO, false, NOW)).toBe(false)
-    })
-
-    it('should be disabled after delay', () => {
-      // Created 1 day ago and delayed 1 hour ago
-      expect(disabledDueToNoBackup(ONE_DAY_AGO, false, NOW + MS_TO_DELAY)).toBe(false)
+    it('should not force account key prompt if backup was already completed', () => {
+      expect(shouldForceBackupSelector(mockState(mockCurrentTime - 10, true))).toBe(false)
     })
   })
 })

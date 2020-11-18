@@ -5,9 +5,11 @@ import * as React from 'react'
 import { Share, StyleSheet, View } from 'react-native'
 import DeviceInfo from 'react-native-device-info'
 import RNShake from 'react-native-shake'
+import { useDispatch } from 'react-redux'
 import AlertBanner from 'src/alert/AlertBanner'
 import { InviteEvents } from 'src/analytics/Events'
 import ValoraAnalytics from 'src/analytics/ValoraAnalytics'
+import { activeScreenChanged } from 'src/app/actions'
 import { getAppLocked } from 'src/app/selectors'
 import UpgradeScreen from 'src/app/UpgradeScreen'
 import { DEV_RESTORE_NAV_STATE_ON_RELOAD } from 'src/config'
@@ -58,6 +60,8 @@ export const NavigatorWrapper = () => {
   const minRequiredVersion = useTypedSelector((state) => state.app.minVersion)
   const isInviteModalVisible = useTypedSelector((state) => state.app.inviteModalVisible)
   const routeNameRef = React.useRef()
+
+  const dispatch = useDispatch()
 
   const updateRequired = React.useMemo(() => {
     if (!minRequiredVersion) {
@@ -138,6 +142,7 @@ export const NavigatorWrapper = () => {
         previousScreen: previousRouteName,
         currentScreen: currentRouteName,
       })
+      dispatch(activeScreenChanged(currentRouteName))
     }
 
     // Save the current route name for later comparision
@@ -164,8 +169,8 @@ export const NavigatorWrapper = () => {
         {(appLocked || updateRequired) && (
           <View style={styles.locked}>{updateRequired ? <UpgradeScreen /> : <PincodeLock />}</View>
         )}
+        {!appLocked && !updateRequired && <BackupPrompt />}
         <View style={styles.floating}>
-          {!appLocked && !updateRequired && <BackupPrompt />}
           <AlertBanner />
           <InviteFriendModal isVisible={isInviteModalVisible} onInvite={onInvite} />
         </View>

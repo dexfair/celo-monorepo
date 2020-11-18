@@ -3,9 +3,14 @@ import { render } from 'react-native-testing-library'
 import { Provider } from 'react-redux'
 import DelayButton from 'src/backup/DelayButton'
 import { createMockStore } from 'test/utils'
-const NOW = new Date().getTime()
 
 const TWO_DAYS = 60 * 60 * 24 * 2 * 1000
+
+const mockCurrentTime = 1552353116086
+
+jest.mock('src/utils/time', () => ({
+  getRemoteTime: () => mockCurrentTime,
+}))
 
 describe('DelayButton', () => {
   it('renders button with text when backup too late and not delayed', () => {
@@ -13,9 +18,8 @@ describe('DelayButton', () => {
       <Provider
         store={createMockStore({
           account: {
-            accountCreationTime: NOW - TWO_DAYS,
+            backupRequiredTime: mockCurrentTime - TWO_DAYS,
             backupCompleted: false,
-            backupDelayedTime: 0,
           },
         })}
       >
@@ -32,9 +36,25 @@ describe('DelayButton', () => {
       <Provider
         store={createMockStore({
           account: {
-            accountCreationTime: NOW - TWO_DAYS,
-            backupDelayedTime: NOW,
+            backupRequiredTime: mockCurrentTime + TWO_DAYS,
             backupCompleted: false,
+          },
+        })}
+      >
+        <DelayButton />
+      </Provider>
+    )
+    expect(queryByText('delayBackup')).toBeFalsy()
+    expect(toJSON()).toMatchSnapshot()
+  })
+
+  it('renders empty when backup already completed', () => {
+    const { toJSON, queryByText } = render(
+      <Provider
+        store={createMockStore({
+          account: {
+            backupRequiredTime: mockCurrentTime - TWO_DAYS,
+            backupCompleted: true,
           },
         })}
       >

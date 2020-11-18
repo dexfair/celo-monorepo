@@ -11,13 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { connect } from 'react-redux'
 import { OnboardingEvents } from 'src/analytics/Events'
 import ValoraAnalytics from 'src/analytics/ValoraAnalytics'
-import { enterBackupFlow, exitBackupFlow } from 'src/app/actions'
 import DelayButton from 'src/backup/DelayButton'
 import { useAccountKey } from 'src/backup/utils'
 import { Namespaces } from 'src/i18n'
 import Logo from 'src/icons/Logo'
 import DrawerTopBar from 'src/navigator/DrawerTopBar'
-import { emptyHeader, headerWithBackButton } from 'src/navigator/Headers'
 import { navigate } from 'src/navigator/NavigationService'
 import { Screens } from 'src/navigator/Screens'
 import { StackParamList } from 'src/navigator/types'
@@ -27,14 +25,9 @@ interface StateProps {
   backupCompleted: boolean
 }
 
-interface DispatchProps {
-  enterBackupFlow: typeof enterBackupFlow
-  exitBackupFlow: typeof exitBackupFlow
-}
-
 type NavigationProps = StackScreenProps<StackParamList, Screens.BackupIntroduction>
 
-type Props = StateProps & DispatchProps & NavigationProps
+type Props = StateProps & NavigationProps
 
 const mapStateToProps = (state: RootState): StateProps => {
   return {
@@ -42,27 +35,7 @@ const mapStateToProps = (state: RootState): StateProps => {
   }
 }
 
-export const navOptionsForAccount = ({ route }: NavigationProps) => {
-  if (route.params?.navigatedFromSettings) {
-    return headerWithBackButton
-  }
-
-  return {
-    ...emptyHeader,
-    headerTitle: '',
-    headerRight: () => <DelayButton />,
-  }
-}
-
 class BackupIntroduction extends React.Component<Props> {
-  componentDidMount() {
-    this.props.enterBackupFlow()
-  }
-
-  componentWillUnmount() {
-    this.props.exitBackupFlow()
-  }
-
   onPressBackup = () => {
     ValoraAnalytics.track(OnboardingEvents.backup_start)
     navigate(Screens.AccountKeyEducation)
@@ -73,7 +46,7 @@ class BackupIntroduction extends React.Component<Props> {
     const navigatedFromSettings = route.params?.navigatedFromSettings
     return (
       <SafeAreaView style={styles.container}>
-        {!navigatedFromSettings && <DrawerTopBar />}
+        {!navigatedFromSettings && <DrawerTopBar rightElement={<DelayButton />} />}
         {backupCompleted ? (
           <AccountKeyPostSetup />
         ) : (
@@ -163,7 +136,6 @@ const styles = StyleSheet.create({
   },
 })
 
-export default connect<StateProps, DispatchProps, {}, RootState>(mapStateToProps, {
-  enterBackupFlow,
-  exitBackupFlow,
-})(BackupIntroduction)
+export default connect<StateProps, DispatchProps, {}, RootState>(mapStateToProps)(
+  BackupIntroduction
+)

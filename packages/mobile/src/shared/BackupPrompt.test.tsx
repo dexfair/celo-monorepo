@@ -1,86 +1,73 @@
 import * as React from 'react'
 import { render } from 'react-native-testing-library'
-import { BackupPrompt } from 'src/shared/BackupPrompt'
-import { getMockI18nProps } from 'test/utils'
+import { Provider } from 'react-redux'
+import { Screens } from 'src/navigator/Screens'
+import BackupPrompt from 'src/shared/BackupPrompt'
+import { createMockStore } from 'test/utils'
 
-const time = 1552353116086
+const mockCurrentTime = 1552353116086
+
+const createStore = (backupRequiredTime: number, backupCompleted: boolean, activeScreen: string) =>
+  createMockStore({
+    app: { activeScreen },
+    account: { backupRequiredTime, backupCompleted },
+  })
+
+jest.mock('src/utils/time', () => ({
+  getRemoteTime: () => mockCurrentTime,
+}))
 
 describe('BackupPrompt', () => {
   it('renders correctly', () => {
     const { toJSON } = render(
-      <BackupPrompt
-        accountCreationTime={time}
-        backupCompleted={false}
-        backupTooLate={true}
-        doingBackupFlow={false}
-        {...getMockI18nProps()}
-      />
+      <Provider store={createStore(mockCurrentTime - 10, false, Screens.WalletHome)}>
+        <BackupPrompt />
+      </Provider>
     )
     expect(toJSON()).toMatchSnapshot()
   })
 
-  describe('when backupCompleted is true and doingBackupFlow is false', () => {
-    it("doesn't render visible stuff", () => {
+  describe('when backupCompleted is true and not doing the backup flow', () => {
+    it("doesn't render the prompt", () => {
       const { queryByText } = render(
-        <BackupPrompt
-          accountCreationTime={time}
-          backupCompleted={true}
-          backupTooLate={false}
-          doingBackupFlow={false}
-          {...getMockI18nProps()}
-        />
+        <Provider store={createStore(mockCurrentTime - 10, true, Screens.WalletHome)}>
+          <BackupPrompt />
+        </Provider>
       )
       expect(queryByText('backupPrompt')).toBeNull()
     })
   })
 
-  describe('when backupCompleted is false', () => {
-    it('renders visible', () => {
+  describe('when backupCompleted is false and not doing the backup flow', () => {
+    it('renders the prompt', () => {
       const { queryByText } = render(
-        <BackupPrompt
-          accountCreationTime={time}
-          backupCompleted={false}
-          backupTooLate={true}
-          doingBackupFlow={false}
-          {...getMockI18nProps()}
-        />
+        <Provider store={createStore(mockCurrentTime - 10, false, Screens.WalletHome)}>
+          <BackupPrompt />
+        </Provider>
       )
       expect(queryByText('backupPrompt')).not.toBeNull()
     })
   })
 
-  describe('when backupCompleted changes', () => {
+  describe('when going through the backup flow', () => {
     it('renders correctly', () => {
-      const initialProps = {
-        ...getMockI18nProps(),
-        accountCreationTime: time,
-        doingBackupFlow: false,
-      }
-      const { update } = render(
-        <BackupPrompt {...initialProps} backupCompleted={false} backupTooLate={true} />
+      const { queryByText } = render(
+        <Provider store={createStore(mockCurrentTime - 10, false, Screens.BackupIntroduction)}>
+          <BackupPrompt />
+        </Provider>
       )
-      update(<BackupPrompt {...initialProps} backupCompleted={true} backupTooLate={false} />)
-      // TODO fix and re-enable, this causes the test to run out of memory and crash
-      // expect(queryByText('backupPrompt')).toBeNull()
+      expect(queryByText('backupPrompt')).toBeNull()
     })
   })
 
-  describe('when doingBackupFlow changes', () => {
+  describe('when time to backup is not up and not going through the backup flow', () => {
     it('renders correctly', () => {
-      const initialProps = {
-        ...getMockI18nProps(),
-        accountCreationTime: time,
-        backupCompleted: false,
-        backupTooLate: true,
-      }
-
-      const { update, queryByText } = render(
-        <BackupPrompt {...initialProps} doingBackupFlow={false} />
+      const { queryByText } = render(
+        <Provider store={createStore(mockCurrentTime + 10, false, Screens.WalletHome)}>
+          <BackupPrompt />
+        </Provider>
       )
-      expect(queryByText('backupPrompt')).not.toBeNull()
-      update(<BackupPrompt {...initialProps} doingBackupFlow={true} />)
-      // TODO fix and re-enable, this causes the test to run out of memory and crash
-      // expect(queryByText('backupPrompt')).toBeNull()
+      expect(queryByText('backupPrompt')).toBeNull()
     })
   })
 })
